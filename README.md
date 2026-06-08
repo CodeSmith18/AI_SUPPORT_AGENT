@@ -122,7 +122,7 @@ codex/deploy-free-platform
 Render build command:
 
 ```bash
-cd frontend && npm ci && npm run build && cd ../backend && npm run db:setup
+cd frontend && npm ci --include=dev && npm run build && cd ../backend && npm run db:setup
 ```
 
 Render start command:

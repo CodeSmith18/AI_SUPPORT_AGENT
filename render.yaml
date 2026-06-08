@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     branch: codex/deploy-free-platform
-    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm run db:setup
+    buildCommand: cd frontend && npm ci --include=dev && npm run build && cd ../backend && npm run db:setup
     startCommand: cd backend && npm run start
     healthCheckPath: /health
     envVars:
@@ -20,4 +20,3 @@ services:
         value: llama-3.3-70b-versatile
       - key: GROQ_API_KEY
         sync: false
-
