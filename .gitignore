@@ -6,6 +6,8 @@ node_modules/
 dist/
 .svelte-kit/
 .vite/
+.next/
+*.tsbuildinfo
 
 data/
 coverage/

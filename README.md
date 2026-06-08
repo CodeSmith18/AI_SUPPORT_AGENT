@@ -4,7 +4,7 @@ Mini AI support chat agent for the Spur founding full-stack engineer take-home.
 
 ## Stack
 
-- Frontend: Svelte + Vite
+- Frontend: Next.js + React
 - Backend: Node.js + TypeScript
 - Database: SQLite
 - LLM: Groq chat completions API
