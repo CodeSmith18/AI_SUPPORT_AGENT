@@ -5,6 +5,10 @@ export interface AppConfig {
   frontendOrigin: string;
   sqlitePath: string;
   llmMode: LlmMode;
+  groqApiKey?: string;
+  groqApiBaseUrl: string;
+  groqModel: string;
+  groqTimeoutMs: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -12,7 +16,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: numberFromEnv(env.PORT, 3000),
     frontendOrigin: env.FRONTEND_ORIGIN ?? "http://localhost:5173",
     sqlitePath: env.SQLITE_PATH ?? "./data/spur-chat.sqlite",
-    llmMode: env.LLM_MODE === "mock" ? "mock" : "groq"
+    llmMode: env.LLM_MODE === "mock" ? "mock" : "groq",
+    groqApiKey: env.GROQ_API_KEY,
+    groqApiBaseUrl: env.GROQ_API_BASE_URL ?? "https://api.groq.com/openai/v1",
+    groqModel: env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+    groqTimeoutMs: numberFromEnv(env.GROQ_TIMEOUT_MS, 15_000)
   };
 }
 

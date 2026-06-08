@@ -6,6 +6,7 @@ import { createDatabase, type Database } from "./db/client.js";
 import { handleChatRoute } from "./routes/chat.js";
 import { sendJson, sendOptions } from "./routes/http.js";
 import { ChatService, mockGenerateReply, type GenerateReply } from "./services/chat.js";
+import { createGroqGenerateReply } from "./services/groq.js";
 
 try {
   loadEnvFile();
@@ -28,9 +29,12 @@ export function createApp(options: CreateAppOptions = {}) {
   const config = options.config ?? loadConfig();
   const db = options.db ?? createDatabase(config.sqlitePath);
   const repository = new ChatRepository(db);
+  const generateReply =
+    options.generateReply ??
+    (config.llmMode === "mock" ? mockGenerateReply : createGroqGenerateReply(config));
   const chatService = new ChatService(
     repository,
-    options.generateReply ?? mockGenerateReply
+    generateReply
   );
 
   return createServer(async (req, res) => {

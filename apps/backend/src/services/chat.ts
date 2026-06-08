@@ -48,10 +48,18 @@ export class ChatService {
     });
 
     const history = this.repository.listMessages(conversation.id, HISTORY_LIMIT);
-    const reply = await this.generateReply({
-      history,
-      userMessage: message
-    });
+    let reply: string;
+
+    try {
+      reply = await this.generateReply({
+        history,
+        userMessage: message
+      });
+    } catch (error) {
+      console.error(error);
+      reply =
+        "Sorry, I could not reach the AI support agent right now. Please try again in a moment or contact support@spurdemo.store.";
+    }
 
     this.repository.saveMessage({
       conversationId: conversation.id,
