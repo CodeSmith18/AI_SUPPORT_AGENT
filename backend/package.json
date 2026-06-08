@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "db:setup": "node --experimental-strip-types src/db/setup.ts",
     "dev": "node --experimental-strip-types --watch src/server.ts",
     "start": "node --experimental-strip-types src/server.ts",
     "check": "node --experimental-strip-types --check src/server.ts"
@@ -12,4 +13,3 @@
     "node": ">=24"
   }
 }
-
