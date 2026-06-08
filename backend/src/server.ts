@@ -17,10 +17,25 @@ const MAX_BODY_BYTES = 20_000;
 migrateDatabase(getDatabase());
 seedKnowledgeDocuments(getDatabase());
 
-function sendJson(response: ServerResponse, payload: JsonResponse): void {
+function resolveCorsOrigin(request: IncomingMessage): string {
+  const requestOrigin = request.headers.origin;
+  const allowedOrigins = new Set([
+    env.frontendOrigin,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ]);
+
+  if (requestOrigin && allowedOrigins.has(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  return env.frontendOrigin;
+}
+
+function sendJson(request: IncomingMessage, response: ServerResponse, payload: JsonResponse): void {
   response.writeHead(payload.status, {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": env.frontendOrigin,
+    "Access-Control-Allow-Origin": resolveCorsOrigin(request),
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
   });
@@ -81,15 +96,15 @@ async function route(request: IncomingMessage): Promise<JsonResponse> {
 
 const server = createServer(async (request, response) => {
   if (request.method === "OPTIONS") {
-    sendJson(response, { status: 204, body: null });
+    sendJson(request, response, { status: 204, body: null });
     return;
   }
 
   try {
-    sendJson(response, await route(request));
+    sendJson(request, response, await route(request));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Something went wrong.";
-    sendJson(response, {
+    sendJson(request, response, {
       status: message.includes("too large") || message.includes("valid JSON") ? 400 : 500,
       body: {
         error: message
