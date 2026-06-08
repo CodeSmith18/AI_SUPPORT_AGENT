@@ -52,6 +52,7 @@ textarea {
   gap: 16px;
   padding: 20px 22px;
   border-bottom: 1px solid #e5edf1;
+  background: #fbfcfd;
 }
 
 .eyebrow {
@@ -71,6 +72,7 @@ h1 {
 .status-pill {
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   min-height: 30px;
   padding: 0 12px;
   border-radius: 999px;
@@ -78,6 +80,15 @@ h1 {
   color: #236b4a;
   font-size: 0.86rem;
   font-weight: 700;
+}
+
+.status-pill::before {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #28a56f;
+  content: "";
 }
 
 .message-list {
@@ -94,6 +105,8 @@ h1 {
 
 .message-row {
   display: flex;
+  align-items: flex-end;
+  gap: 8px;
   width: 100%;
 }
 
@@ -114,9 +127,49 @@ h1 {
   overflow-wrap: anywhere;
 }
 
-.message-bubble p {
+.message-avatar {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #dce6eb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #506070;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.message-avatar-user {
+  border-color: #bdd8d2;
+  background: #e5f6ee;
+  color: #1f6f61;
+}
+
+.message-text {
   margin: 0;
   white-space: pre-wrap;
+}
+
+.message-line {
+  display: block;
+  animation: lineReveal 180ms ease-out both;
+}
+
+.message-line + .message-line {
+  margin-top: 6px;
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: #1f6f61;
+  vertical-align: -0.18em;
+  animation: cursorBlink 900ms steps(2, start) infinite;
 }
 
 .message-bubble time {
@@ -127,7 +180,7 @@ h1 {
 }
 
 .message-bubble-user {
-  background: #1f6f61;
+  background: linear-gradient(135deg, #1f6f61, #236b83);
   color: #ffffff;
 }
 
@@ -139,6 +192,7 @@ h1 {
   border-color: #dce6eb;
   background: #ffffff;
   color: #18212f;
+  box-shadow: 0 8px 24px rgba(24, 33, 47, 0.05);
 }
 
 .source-list {
@@ -262,6 +316,30 @@ h1 {
   }
 }
 
+@keyframes lineReveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cursorBlink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .app-shell {
     padding: 0;
@@ -282,6 +360,10 @@ h1 {
 
   .message-bubble {
     max-width: 88%;
+  }
+
+  .message-avatar {
+    display: none;
   }
 
   .chat-input-form {

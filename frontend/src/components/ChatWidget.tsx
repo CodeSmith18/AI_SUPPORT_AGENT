@@ -6,6 +6,7 @@ import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 
 const SESSION_STORAGE_KEY = "spur-ai-support-session-id";
+const REVEAL_DELAY_MS = 38;
 
 const welcomeMessage: ChatMessage = {
   id: "welcome",
@@ -24,7 +25,9 @@ export function ChatWidget() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [latestSources, setLatestSources] = useState<KnowledgeSource[]>([]);
+  const [revealingMessageId, setRevealingMessageId] = useState<string | undefined>();
   const endRef = useRef<HTMLDivElement | null>(null);
+  const revealRunRef = useRef(0);
 
   const latestAiMessageId = useMemo(() => {
     return [...messages].reverse().find((message) => message.sender === "ai")?.id;
@@ -32,7 +35,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, isSending, error]);
+  }, [messages, isSending, error, revealingMessageId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,12 +70,54 @@ export function ChatWidget() {
     return () => {
       isMounted = false;
     };
-  }, [sessionId]);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      revealRunRef.current += 1;
+    };
+  }, []);
+
+  function splitReplyIntoWords(text: string): string[] {
+    return text.trim().replace(/\s+/g, " ").split(" ").filter(Boolean);
+  }
+
+  async function revealAiMessage(message: ChatMessage) {
+    const runId = revealRunRef.current + 1;
+    revealRunRef.current = runId;
+    const words = splitReplyIntoWords(message.text);
+
+    if (words.length === 0) {
+      setRevealingMessageId(undefined);
+      return;
+    }
+
+    setRevealingMessageId(message.id);
+
+    for (let index = 1; index <= words.length; index += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, REVEAL_DELAY_MS));
+
+      if (revealRunRef.current !== runId) {
+        return;
+      }
+
+      const visibleText = words.slice(0, index).join(" ");
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage.id === message.id ? { ...currentMessage, text: visibleText } : currentMessage
+        )
+      );
+    }
+
+    if (revealRunRef.current === runId) {
+      setRevealingMessageId(undefined);
+    }
+  }
 
   async function handleSend() {
     const text = input.trim();
 
-    if (!text || isSending) {
+    if (!text || isSending || revealingMessageId) {
       return;
     }
 
@@ -87,17 +132,29 @@ export function ChatWidget() {
     setInput("");
     setError(undefined);
     setLatestSources([]);
+    setRevealingMessageId(undefined);
     setIsSending(true);
 
     try {
       const response = await sendChatMessage({ message: text, sessionId });
+      const latestAiMessage = [...response.messages].reverse().find((message) => message.sender === "ai");
+      const nextMessages = latestAiMessage
+        ? response.messages.map((message) =>
+            message.id === latestAiMessage.id ? { ...message, text: "" } : message
+          )
+        : response.messages;
+
       window.localStorage.setItem(SESSION_STORAGE_KEY, response.sessionId);
       setSessionId(response.sessionId);
-      setMessages(response.messages.length > 0 ? response.messages : [optimisticMessage]);
+      setMessages(nextMessages.length > 0 ? nextMessages : [optimisticMessage]);
       setLatestSources(response.sources);
 
       if (response.truncated) {
         setError("Your message was shortened before sending because it was very long.");
+      }
+
+      if (latestAiMessage) {
+        void revealAiMessage(latestAiMessage);
       }
     } catch (sendError) {
       const message =
@@ -107,6 +164,7 @@ export function ChatWidget() {
       setError(message);
       setMessages((currentMessages) => currentMessages.filter((item) => item.id !== optimisticMessage.id));
       setInput(text);
+      setRevealingMessageId(undefined);
     } finally {
       setIsSending(false);
     }
@@ -127,7 +185,8 @@ export function ChatWidget() {
           <MessageBubble
             key={message.id}
             message={message}
-            sources={message.id === latestAiMessageId ? latestSources : []}
+            isStreaming={message.id === revealingMessageId}
+            sources={message.id === latestAiMessageId && message.id !== revealingMessageId ? latestSources : []}
           />
         ))}
         {isSending && <TypingIndicator />}
@@ -140,8 +199,12 @@ export function ChatWidget() {
         </div>
       )}
 
-      <ChatInput isSending={isSending || isLoadingHistory} onChange={setInput} onSubmit={handleSend} value={input} />
+      <ChatInput
+        isSending={isSending || isLoadingHistory || Boolean(revealingMessageId)}
+        onChange={setInput}
+        onSubmit={handleSend}
+        value={input}
+      />
     </section>
   );
 }
-
