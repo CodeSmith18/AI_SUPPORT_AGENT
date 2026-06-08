@@ -1,4 +1,6 @@
+import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { extname, resolve } from "node:path";
 import { getDatabase } from "./db/connection.ts";
 import { migrateDatabase } from "./db/schema.ts";
 import { seedKnowledgeDocuments } from "./db/seed.ts";
@@ -13,6 +15,18 @@ export type JsonResponse = {
 
 const env = getEnv();
 const MAX_BODY_BYTES = 20_000;
+const FRONTEND_DIST_ROOT = resolve(env.frontendDistPath);
+
+const MIME_TYPES = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".html", "text/html; charset=utf-8"],
+  [".ico", "image/x-icon"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml"],
+  [".webp", "image/webp"]
+]);
 
 migrateDatabase(getDatabase());
 seedKnowledgeDocuments(getDatabase());
@@ -40,6 +54,48 @@ function sendJson(request: IncomingMessage, response: ServerResponse, payload: J
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
   });
   response.end(JSON.stringify(payload.body));
+}
+
+function isApiPath(pathname: string): boolean {
+  return pathname === "/health" || pathname === "/chat/message" || pathname.startsWith("/chat/");
+}
+
+function getStaticFilePath(pathname: string): string | undefined {
+  const safePathname = decodeURIComponent(pathname);
+  const requestedPath = safePathname === "/" ? "index.html" : safePathname.slice(1);
+  const filePath = resolve(FRONTEND_DIST_ROOT, requestedPath);
+
+  if (!filePath.startsWith(FRONTEND_DIST_ROOT)) {
+    return undefined;
+  }
+
+  if (existsSync(filePath) && statSync(filePath).isFile()) {
+    return filePath;
+  }
+
+  const indexPath = resolve(FRONTEND_DIST_ROOT, "index.html");
+
+  if (existsSync(indexPath) && statSync(indexPath).isFile()) {
+    return indexPath;
+  }
+
+  return undefined;
+}
+
+function sendStaticFile(request: IncomingMessage, response: ServerResponse, filePath: string): void {
+  const extension = extname(filePath);
+  const contentType = MIME_TYPES.get(extension) ?? "application/octet-stream";
+
+  response.writeHead(200, {
+    "Content-Type": contentType
+  });
+
+  if (request.method === "HEAD") {
+    response.end();
+    return;
+  }
+
+  createReadStream(filePath).pipe(response);
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
@@ -95,12 +151,23 @@ async function route(request: IncomingMessage): Promise<JsonResponse> {
 }
 
 const server = createServer(async (request, response) => {
+  const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+
   if (request.method === "OPTIONS") {
     sendJson(request, response, { status: 204, body: null });
     return;
   }
 
   try {
+    if ((request.method === "GET" || request.method === "HEAD") && !isApiPath(url.pathname)) {
+      const staticFilePath = getStaticFilePath(url.pathname);
+
+      if (staticFilePath) {
+        sendStaticFile(request, response, staticFilePath);
+        return;
+      }
+    }
+
     sendJson(request, response, await route(request));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Something went wrong.";

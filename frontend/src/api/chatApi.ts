@@ -1,6 +1,7 @@
 import type { HistoryResponse, SendMessageResponse } from "../types/chat";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? "" : "http://localhost:4000");
 
 type SendMessageInput = {
   message: string;
@@ -35,4 +36,3 @@ export async function fetchChatHistory(sessionId: string): Promise<HistoryRespon
 
   return parseJsonResponse<HistoryResponse>(response);
 }
-

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: spur-ai-support-agent
+    runtime: node
+    plan: free
+    branch: codex/deploy-free-platform
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm run db:setup
+    startCommand: cd backend && npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_ORIGIN
+        value: https://spur-ai-support-agent.onrender.com
+      - key: FRONTEND_DIST_PATH
+        value: ../frontend/dist
+      - key: DATABASE_PATH
+        value: ./data/spur-support.db
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_API_KEY
+        sync: false
+

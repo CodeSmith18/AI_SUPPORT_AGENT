@@ -87,6 +87,59 @@ The frontend runs at:
 http://localhost:5173
 ```
 
+## Free Deployment
+
+The repo is prepared for a single-service Render deployment using `render.yaml`.
+
+Why this setup:
+
+- Render has a free web service tier suitable for demos.
+- The backend serves both the API and the built React frontend from one URL.
+- Production frontend requests use same-origin `/chat/...` routes, so no separate frontend/backend CORS setup is needed.
+
+Deploy steps:
+
+1. Push the deploy branch:
+
+```bash
+git push origin codex/deploy-free-platform
+```
+
+2. In Render, create a new Blueprint from this repository.
+3. Use the root `render.yaml`.
+4. When prompted, set:
+
+```txt
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+5. Confirm the service deploys from:
+
+```txt
+codex/deploy-free-platform
+```
+
+Render build command:
+
+```bash
+cd frontend && npm ci && npm run build && cd ../backend && npm run db:setup
+```
+
+Render start command:
+
+```bash
+cd backend && npm run start
+```
+
+After deploy, check:
+
+```txt
+https://your-render-service.onrender.com/health
+https://your-render-service.onrender.com/
+```
+
+Free-tier note: Render free web services use an ephemeral filesystem, so the SQLite database can reset when the service restarts, redeploys, or spins down. This is acceptable for the take-home demo, but a production version should use Postgres.
+
 ## API
 
 ```txt
@@ -216,4 +269,3 @@ Manual browser smoke test:
 - Add deployment-ready Postgres support.
 - Add Playwright end-to-end tests.
 - Add an admin UI for editing knowledge documents.
-
