@@ -1,9 +1,14 @@
 import { getOrCreateConversation, findConversationById } from "../repositories/conversation.repository.ts";
 import {
   createMessage,
-  listMessagesForConversation
+  listMessagesForConversation,
+  listRecentMessagesForConversation
 } from "../repositories/message.repository.ts";
 import type { ChatMessageResponse, Message } from "../types/chat.ts";
+import { generateReply } from "./groq.service.ts";
+import { retrieveKnowledge } from "./rag.service.ts";
+
+const RECENT_HISTORY_LIMIT = 10;
 
 function toResponseMessage(message: Message): ChatMessageResponse {
   return {
@@ -12,10 +17,6 @@ function toResponseMessage(message: Message): ChatMessageResponse {
     text: message.text,
     createdAt: message.createdAt
   };
-}
-
-function generatePlaceholderReply(userMessage: string): string {
-  return `Thanks for reaching out. I have saved your question: "${userMessage}". The Groq-powered RAG answer will be enabled in the next stage.`;
 }
 
 export type SendMessageInput = {
@@ -27,21 +28,38 @@ export type SendMessageResult = {
   reply: string;
   sessionId: string;
   messages: ChatMessageResponse[];
+  sources: {
+    id: string;
+    title: string;
+    category: string;
+  }[];
 };
 
-export function sendMessage(input: SendMessageInput): SendMessageResult {
+export async function sendMessage(input: SendMessageInput): Promise<SendMessageResult> {
   const conversation = getOrCreateConversation(input.sessionId);
 
   createMessage(conversation.id, "user", input.message);
 
-  const reply = generatePlaceholderReply(input.message);
+  const history = listRecentMessagesForConversation(conversation.id, RECENT_HISTORY_LIMIT);
+  const knowledge = retrieveKnowledge(input.message);
+  const reply = await generateReply({
+    userMessage: input.message,
+    history,
+    knowledge
+  });
+
   createMessage(conversation.id, "ai", reply);
   const messages = listMessagesForConversation(conversation.id);
 
   return {
     reply,
     sessionId: conversation.id,
-    messages: messages.map(toResponseMessage)
+    messages: messages.map(toResponseMessage),
+    sources: knowledge.map((document) => ({
+      id: document.id,
+      title: document.title,
+      category: document.category
+    }))
   };
 }
 

@@ -7,7 +7,7 @@ type ChatMessageRequest = {
   sessionId?: unknown;
 };
 
-export function handleSendMessage(body: unknown): JsonResponse {
+export async function handleSendMessage(body: unknown): Promise<JsonResponse> {
   const payload = (body ?? {}) as ChatMessageRequest;
   const validation = validateMessage(payload.message);
 
@@ -20,7 +20,7 @@ export function handleSendMessage(body: unknown): JsonResponse {
     };
   }
 
-  const result = sendMessage({
+  const result = await sendMessage({
     message: validation.message,
     sessionId: normalizeSessionId(payload.sessionId)
   });
@@ -31,6 +31,7 @@ export function handleSendMessage(body: unknown): JsonResponse {
       reply: result.reply,
       sessionId: result.sessionId,
       messages: result.messages,
+      sources: result.sources,
       truncated: validation.truncated
     }
   };
@@ -67,4 +68,3 @@ export function handleGetMessages(sessionId: string): JsonResponse {
     }
   };
 }
-

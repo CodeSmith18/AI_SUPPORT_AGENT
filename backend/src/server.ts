@@ -62,7 +62,7 @@ async function route(request: IncomingMessage): Promise<JsonResponse> {
 
   if (request.method === "POST" && url.pathname === "/chat/message") {
     const body = await readJsonBody(request);
-    return handleSendMessage(body);
+    return await handleSendMessage(body);
   }
 
   const messageMatch = url.pathname.match(/^\/chat\/([^/]+)\/messages$/);
