@@ -2,6 +2,22 @@
 
 Mini AI live chat support agent for the Spur founding full-stack engineer assignment. The app simulates an e-commerce support widget for AuroraMart, persists conversations, retrieves relevant store knowledge, and uses Groq to generate concise support replies.
 
+## Live Demo
+
+Deployed app:
+
+```txt
+https://ai-support-agent-dni5.onrender.com
+```
+
+Health endpoint:
+
+```txt
+https://ai-support-agent-dni5.onrender.com/health
+```
+
+Free-tier note: the deployed demo uses SQLite on Render's local filesystem, so chat history can reset when the service restarts, redeploys, or spins down. For production, this should move to Postgres.
+
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite
@@ -9,6 +25,18 @@ Mini AI live chat support agent for the Spur founding full-stack engineer assign
 - Database: SQLite through Node's built-in `node:sqlite`
 - LLM: Groq chat completions
 - RAG: Seeded store knowledge plus keyword retrieval
+
+## Features
+
+- AI support chat widget for a fictional e-commerce store.
+- Real Groq LLM integration through environment variables.
+- Mini-RAG retrieval over seeded store policy documents.
+- Persisted conversations and messages in SQLite.
+- Reloadable chat history through `sessionId`.
+- Fast word-by-word AI response reveal in the UI.
+- Source chips showing which knowledge documents informed the latest answer.
+- Friendly handling for empty input, long input, invalid JSON, and LLM failures.
+- No hard-coded secrets.
 
 ## Project Structure
 
@@ -36,6 +64,13 @@ Requirements:
 - Node.js 24 or newer
 - npm
 - Groq API key
+
+Clone and enter the repository:
+
+```bash
+git clone https://github.com/CodeSmith18/AI_SUPPORT_AGENT.git
+cd AI_SUPPORT_AGENT
+```
 
 ### Backend
 
@@ -85,6 +120,47 @@ The frontend runs at:
 
 ```txt
 http://localhost:5173
+```
+
+Open the app in your browser and ask questions like:
+
+```txt
+Do you ship to USA?
+What is your return policy?
+How long do refunds take?
+What are your support hours?
+```
+
+## Deployment
+
+The deployed version is prepared from the deployment branch:
+
+```txt
+codex/deploy-free-platform
+```
+
+That branch contains Render-specific deployment config. The backend serves both the API and the built React frontend from one Render web service.
+
+Render build command:
+
+```bash
+cd frontend && npm ci --include=dev && npm run build && cd ../backend && npm run db:setup
+```
+
+Render start command:
+
+```bash
+cd backend && npm run start
+```
+
+Required Render environment variables:
+
+```txt
+NODE_ENV=production
+FRONTEND_DIST_PATH=../frontend/dist
+DATABASE_PATH=./data/spur-support.db
+GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
 ## API
@@ -216,4 +292,3 @@ Manual browser smoke test:
 - Add deployment-ready Postgres support.
 - Add Playwright end-to-end tests.
 - Add an admin UI for editing knowledge documents.
-
